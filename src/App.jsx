@@ -1,35 +1,116 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useRef, useState } from 'react';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState([]);
+  const [image, setImage] = useState(null);
+  const [layout, setLayout] = useState('column');
+  const nameRef = useRef();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [imagesPerPage, setImagesPerPage] = useState(2);
+
+  const indexOfLastImage = currentPage * imagesPerPage;
+  const indexOfFirstImage = indexOfLastImage - imagesPerPage;
+  const currentImages = data.slice(indexOfFirstImage, indexOfLastImage);
+  const pageNumbers = Math.ceil(data.length / imagesPerPage);
+
+  const pageArray = Array.from({ length: pageNumbers }, (_, i) => i + 1);
+
+  const renderedPages = pageArray.map(page => (
+    <span
+      key={page}
+      onClick={() => setCurrentPage(page)}
+      className={currentPage === page ? 'active' : ''}
+    >
+      {page}
+    </span>
+  ));
+
+  const onImageChange = e => {
+    setImage(e.target.files[0]);
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (!image || !nameRef.current.value) {
+      alert('Fields cannot be empty');
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(image);
+    const updatedData = [
+      ...data,
+      {
+        id: crypto.randomUUID(),
+        name: nameRef.current.value,
+        url: imageUrl,
+        uploadDate: new Date().toISOString(),
+      },
+    ];
+    setData(updatedData);
+    setImage(null);
+    nameRef.current.value = '';
+  };
+
+  const handleDeleteClick = receivedItem => {
+    if (window.confirm('Are you sure you want to delete this image?')) {
+      const updatedData = data.filter(item => item.id !== receivedItem.id);
+      setData(updatedData);
+    }
+  };
+
+  let content;
+  if (renderedPages.length === 0) {
+    content = <h1>No images yet</h1>;
+  } else {
+    content = currentImages
+      .filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map(item => (
+        <div className="image-container" key={item.id}>
+          <img src={item.url} alt={item.name} />
+          <div className="action-box">
+            <p>{item.name}</p>
+            <button onClick={() => handleDeleteClick(item)}>Delete</button>
+          </div>
+        </div>
+      ));
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="app">
+      <h1>Image Gallery</h1>
+      <div className="pagination">{renderedPages}</div>
+      <input
+        placeholder="Search for images by name"
+        className="search-input"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+      />
+      <form action="" onSubmit={handleSubmit}>
+        <input type="file" accept="image/*" onChange={onImageChange} />
+        <input type="text" ref={nameRef} placeholder="Image name" />
+        <button type="submit">Submit</button>
+      </form>
+      <div className="layout-box">
+        <h3>Switch layout</h3>
+        <button
+          onClick={() => setLayout('column')}
+          className={layout === 'column' ? 'active' : ''}
+        >
+          Column
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+        <button
+          onClick={() => setLayout('grid')}
+          className={layout === 'grid' ? 'active' : ''}
+        >
+          Grid
+        </button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      <div className={`image-list ${layout}`}>{content}</div>
+    </div>
+  );
 }
 
-export default App
+export default App;
