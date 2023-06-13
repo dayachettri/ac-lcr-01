@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 function App() {
   const [data, setData] = useState([]);
@@ -25,6 +25,12 @@ function App() {
       {page}
     </span>
   ));
+
+  useEffect(() => {
+    if (currentImages.length === 0 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  }, [currentImages, currentPage]);
 
   const onImageChange = e => {
     setImage(e.target.files[0]);
@@ -61,7 +67,7 @@ function App() {
 
   let content;
   if (renderedPages.length === 0) {
-    content = <h1>No images yet</h1>;
+    content = <h1 className="no-images">No images yet</h1>;
   } else {
     content = currentImages
       .filter(item =>
@@ -95,20 +101,16 @@ function App() {
       </form>
       <div className="layout-box">
         <h3>Switch layout</h3>
-        <button
-          onClick={() => setLayout('column')}
-          className={layout === 'column' ? 'active' : ''}
-        >
-          Column
-        </button>
-        <button
-          onClick={() => setLayout('grid')}
-          className={layout === 'grid' ? 'active' : ''}
-        >
-          Grid
-        </button>
+        <button onClick={() => setLayout('column')}>Column</button>
+        <button onClick={() => setLayout('grid')}>Grid</button>
       </div>
-      <div className={`image-list ${layout}`}>{content}</div>
+      <div
+        style={
+          layout === 'grid' ? { display: 'flex', 'flex-wrap': 'wrap' } : {}
+        }
+      >
+        {content}
+      </div>
     </div>
   );
 }
